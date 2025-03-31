@@ -1,55 +1,69 @@
 import React, { useState, useEffect } from "react";
+// Importing Firebase functions for authentication and sign-in
 import { auth, provider, signInWithPopup, signOut } from "../firebase/config";
-import { onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth"; 
+import { onAuthStateChanged, setPersistence, browserSessionPersistence } from "firebase/auth";
 
 const Login = () => {
+  // State to store user details after sign-in
   const [user, setUser] = useState(null);
 
-  // Listen for auth state changes
+  // This hook runs when the component mounts and whenever the auth state changes
   useEffect(() => {
+    // Listens for authentication state changes (sign-in / sign-out)
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);  // Update the user state when the auth state changes
+      setUser(currentUser);  // Updates the user state with the current user details
     });
 
-    return () => unsubscribe();  // Cleanup the listener when component unmounts
+    return () => unsubscribe();  // Cleanup listener on component unmount
   }, []);
 
+  // Function to handle sign-in with Google
   const signIn = async () => {
     try {
-      // Set session persistence (important for signing in with different accounts)
-      await setPersistence(auth, browserSessionPersistence); // Ensure session is limited to current session
-      await signInWithPopup(auth, provider); // Sign in with Google provider
+      // Set session persistence to current session (won't persist across tabs)
+      await setPersistence(auth, browserSessionPersistence);
+      
+      // Initiates sign-in with Google provider
+      await signInWithPopup(auth, provider);
     } catch (error) {
-      console.error("Error signing in: ", error);
+      console.error("Error signing in: ", error);  // Log any errors during sign-in
     }
   };
 
+  // Function to sign the user out
   const signOutUser = async () => {
     try {
-      await signOut(auth); // Sign out the user
+      await signOut(auth);  // Signs out the current user
     } catch (error) {
-      console.error("Error signing out: ", error);
+      console.error("Error signing out: ", error);  // Log any errors during sign-out
     }
   };
 
+  // Function to sign in with a different Google account
   const signInWithDifferentAccount = async () => {
     try {
-      await signOut(auth); // Sign out before attempting to sign in with a different account
-      await signInWithPopup(auth, provider); // Then sign in with a different account
+      // First, sign the user out to clear the current session
+      await signOut(auth);
+
+      // Then, initiate sign-in with the Google provider (allows selecting a different account)
+      await signInWithPopup(auth, provider);
     } catch (error) {
-      console.error("Error signing in with different account: ", error);
+      console.error("Error signing in with different account: ", error);  // Log any errors during this process
     }
   };
 
   return (
     <div className="login-container">
+      {/* Check if the user is logged in */}
       {!user ? (
-        <button onClick={signIn}>Sign in with Google</button>  // If not signed in, show Google sign-in button
+        // If no user is signed in, display the sign-in button
+        <button onClick={signIn}>Sign in with Google</button>
       ) : (
+        // If the user is signed in, show the logged-in state with user info and options
         <div>
-          <p>Welcome, {user.displayName}</p>
-          <button onClick={signOutUser}>Sign out</button>
-          <button onClick={signInWithDifferentAccount}>Sign in with a different account</button>
+          <p>Welcome, {user.displayName}</p>  {/* Display the user's name */}
+          <button onClick={signOutUser}>Sign out</button>  {/* Sign out button */}
+          <button onClick={signInWithDifferentAccount}>Sign in with a different account</button>  {/* Allow sign-in with a different account */}
         </div>
       )}
     </div>
